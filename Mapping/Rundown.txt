@@ -1,0 +1,182 @@
+MIRROR - Complete Brief
+---
+## THE PROBLEM
+Organizations can't predict how infrastructure failures cascade. When ports close, bridges collapse, or power grids fail - it takes weeks to understand the damage. By then they've lost tens to hundreds of millions. Current tools simulate single systems in isolation and take days, consultants take 6 months for static reports. Nobody can show cross-domain cascades in real-time.
+---
+## THE SOLUTION
+Mirror simulates infrastructure disruptions in 60 seconds and shows exactly what breaks, when, and how much it costs.
+User asks: "Port of LA closes for 2 weeks"
+Mirror shows:
+- Day 3: Alternate ports hit capacity
+- Day 8: Inventory warnings at 200+ facilities
+- Day 12: Production stops at 15 factories
+- Total: $8B economic impact
+- Actions: Air freight costs $300K, prevents $84M loss
+3D visualization + AI plain-English report + specific recommendations with ROI.
+---
+## WHY WE'RE DIFFERENT
+**Zero competition in universal real-time simulation:**
+vs Engineering Tools: They simulate ONE system (power OR water), take 8-24 hours. We simulate ALL systems simultaneously (power → water → supply chain → economy) in 60 seconds.
+vs Supply Chain Software: Resilinc/Everstream send alerts AFTER disruptions start. We simulate BEFORE they happen.
+vs Consultants: They charge $2M, take 6 months, deliver static PowerPoint. We do unlimited scenarios, real-time, $1M/year.
+**The breakthrough:**
+- Cross-domain modeling (first to show cascades across different infrastructure types)
+- Real-time speed (parallel processing from video game engines, 100x faster)
+- Hidden pattern detection (AI finds correlations humans miss)
+- First-mover in winner-take-all market (18-month head start)
+---
+## HOW IT WORKS
+**Data Layer (pre-loaded):**
+- City infrastructure: Roads, power lines, ports, water systems (OpenStreetMap, Overture Maps - free/public)
+- Customer operations: Their facilities, suppliers, inventory levels (they provide during onboarding)
+**User Input:**
+- Natural language: "What if Port of LA closes for 2 weeks?"
+- LLM (GPT-4) parses → structured parameters
+**Simulation Engine (Rust + Bevy):**
+- Network graph: Nodes (infrastructure) + Edges (connections)
+- Physics simulation: 100K+ entities, cascading failures across domains
+- Runs 14-day scenario in 60 seconds (real-time parallel processing)
+**Output:**
+- 3D visualization: Watch cascade spread (color-coded facilities: green → yellow → red)
+- Timeline: Hour-by-hour/day-by-day events
+- Economic impact: Dollar cost per day
+- AI report: Plain English summary with recommendations
+---
+## FIRST CUSTOMER (Year 1 Focus)
+**Who:** Pharmaceutical manufacturing companies
+**Why pharma:**
+- Complex global supply chains (APIs from India/China)
+- Recent pain fresh (COVID supply shocks)
+- High willingness to pay ($500K-$2M/year is rounding error)
+- Clear ROI (one drug shortage = $50-200M loss)
+- Regulatory pressure (FDA requires supply chain resilience)
+- Concentrated market (50 major pharma companies in US)
+**Use case:** "What if our Shanghai supplier shuts down for 3 weeks?"
+**Why start here:** Fastest to revenue, clearest pain, easiest to validate ROI.
+---
+## GENERAL CUSTOMER (Year 2-3 Expansion)
+**Target:** Manufacturing & production companies with complex supply chains
+**Includes:**
+- Pharmaceutical (Year 1 focus)
+- Automotive (just-in-time vulnerable)
+- Electronics (chip shortage pain)
+- Consumer goods (P&G, Unilever scale)
+- Aerospace/Defense (critical supply chains)
+**Pain point:** All have suppliers → manufacturing → customers. All vulnerable to disruptions cascading through operations.
+**Why they pay:** Single prevented disruption ($50-200M) pays for software 50-200x over.
+**Later expansion:**
+- Infrastructure operators (utilities, ports, water systems)
+- Government (DoD, FEMA disaster planning)
+- Financial institutions (hedge funds trading on disruptions, insurance underwriting)
+---
+## THE MARKET
+**Size:** $7.6B+ TAM
+- Manufacturing companies: $30-50B addressable
+- Infrastructure operators: $4B
+- Government: $2.5B
+- Financial: $600M
+**Competition:** Zero direct (no universal real-time cross-domain simulator exists)
+**Economics:**
+- Customer pays: $500K-$2M/year
+- Costs us: $25-50K/year (compute + data)
+- Gross margin: 95%+
+- LTV: $7-10M (7-year customer lifetime)
+- CAC: $200K (enterprise sales)
+- LTV/CAC: 35-50:1
+---
+## GO-TO-MARKET
+**Year 1:** Port closure simulation for pharma
+- Build: LA infrastructure + port closure scenarios
+- Sell: 20 pharma companies
+- Prove: Simulation accuracy, clear ROI
+- Result: $10M ARR
+**Year 2:** Multi-city + expand industries
+- Build: 10 cities, cross-domain cascades (power + water + supply chain)
+- Sell: Pharma + automotive + electronics
+- Result: $60M ARR (60 customers)
+**Year 3:** Government contracts + scale
+- Build: 50 cities, all domains, behavioral layer
+- Sell: Manufacturing + infrastructure operators + DoD/FEMA
+- Result: $225M ARR (150 customers)
+---
+## THE TECHNICAL STACK
+**Frontend:** React + TypeScript + Three.js (3D visualization)
+**Backend:**
+- Simulation: Rust + Bevy (parallel processing, real-time physics)
+- API: Python FastAPI (LLM orchestration)
+- Database: PostgreSQL + PostGIS (geospatial)
+**AI Layer:**
+- GPT-4 (natural language input + report generation)
+- Custom algorithms (cascade propagation, economic impact)
+**Data:**
+- Public: OpenStreetMap, Overture Maps, government data (free)
+- Customer: ERP systems, inventory, operational data (they provide)
+**Infrastructure:** AWS (GPU compute for simulation)
+---
+## BUILD TIMELINE
+**Month 1-2:** Data pipeline + basic simulation (port closure working)
+**Month 3-4:** Simulation refinement + validation (compare to real events)
+**Month 5-6:** Frontend + 3D visualization
+**Month 7-9:** LLM integration + polish
+**Total to MVP:** 9 months with small team (3 people)
+---
+## FUNDING
+**Raising:** $3M seed
+**Use:**
+- Engineering: $1.8M (4 engineers, build multi-city platform)
+- Sales: $600K (2 sales people, close 20 customers)
+- Infrastructure: $400K (compute, data, scaling)
+- Operations: $200K (buffer)
+**18-month milestones:**
+- 20 paying customers
+- $10M ARR
+- 3 cities operational
+- Series A ready at $100M+ valuation
+---
+## WHY NOW
+**Technology converged:**
+- GPU compute cheap enough (AWS $3/hour vs $30/hour in 2015)
+- Open infrastructure data available (Overture Maps launched 2022)
+- AI capable (GPT-4 for natural language + report generation)
+**Market aware:**
+- Texas grid ($130B), Baltimore bridge ($2B), COVID supply chains
+- Companies desperate for solutions
+- Pain is fresh, budgets allocated
+**Window closing:**
+- No competition TODAY but won't stay that way
+- First-mover wins (network effects, data moat)
+- 18-month head start before replication
+---
+## KEY METRICS TO TRACK
+**Product:**
+- Simulation accuracy (target >80% vs historical events)
+- Simulation speed (target <60 seconds for 2-week scenario)
+- Cities operational
+**Business:**
+- Pipeline ($)
+- Paying customers (#)
+- ARR ($)
+- Customer acquisition cost
+- Monthly burn rate
+**Growth:**
+- Demo requests per week
+- Pilot conversion rate (pilot → paying)
+- Net revenue retention (expansion)
+---
+## RISKS & MITIGATION
+**Risk 1: Can't build it**
+- Mitigation: Hire strong Rust/systems engineers, start simple (one city, one scenario)
+**Risk 2: Simulation not accurate**
+- Mitigation: Validate against historical events (Baltimore, Texas), tune parameters, under-promise
+**Risk 3: Customers won't pay**
+- Mitigation: Start with pilots ($50K), prove ROI, convert to annual contracts
+**Risk 4: Run out of money before revenue**
+- Mitigation: $3M seed = 18-month runway, focus on revenue from Month 9+
+**Risk 5: Competitor emerges**
+- Mitigation: Move fast, get customers, build data moat (customer data improves accuracy)
+---
+## SUCCESS =
+**18 months:** $10M ARR, 20 customers, proven simulation accuracy, Series A at $100M+ valuation
+**3 years:** $225M ARR, 150 customers, category leader, Series B at $1B (unicorn)
+**5+ years:** Operating system for infrastructure decisions, every major organization uses Mirror before making critical decisions
+---

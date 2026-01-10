@@ -1,0 +1,402 @@
+MIRROR - 3D Visualization Code Stack
+---
+
+## OVERVIEW
+This document outlines the technical stack for Mirror's 3D visualization component.
+Focus: Real-time infrastructure disruption visualization using Mapbox + deck.gl
+
+---
+
+## ARCHITECTURE LAYERS
+
+### 1. DATA LAYER
+**Storage:** PostgreSQL + PostGIS
+- Infrastructure data (roads, ports, power lines, water systems)
+- Facility locations (customer operations, suppliers, warehouses)
+- Simulation results (disruption cascades, timeline events, economic impact)
+
+**Connection Details:**
+```
+DB_NAME = "mirror"
+DB_USER = "postgres"
+DB_PASSWORD = "1234!"
+DB_HOST = "localhost"
+DB_PORT = "5432"
+```
+
+**Data Flow:**
+PostgreSQL → Backend API → Frontend → deck.gl Layers
+
+---
+
+### 2. BACKEND LAYER
+**Purpose:** Serve GIS data and simulation results to frontend
+
+**Technology Options:**
+- Python FastAPI (recommended - matches overall Mirror stack)
+- Node.js/Express (alternative if frontend-heavy team)
+
+**Responsibilities:**
+- Query PostgreSQL/PostGIS for infrastructure data
+- Transform data to GeoJSON format for deck.gl
+- Serve simulation results (disruption states, timelines)
+- Handle real-time updates during simulation playback
+
+**Key Endpoints:**
+- GET /api/infrastructure - Fetch base infrastructure layers
+- GET /api/facilities - Fetch customer facility locations
+- GET /api/simulation/:id - Fetch simulation results
+- GET /api/simulation/:id/timeline - Fetch time-series data for animation
+
+---
+
+### 3. FRONTEND LAYER
+
+**Core Stack:**
+- React + TypeScript
+- Mapbox GL JS (base map, GIS rendering)
+- deck.gl (3D visualization layers, animations)
+
+**Why This Stack:**
+✓ Mapbox: Industry-standard for GIS rendering, performant vector tiles
+✓ deck.gl: Built for large-scale data visualization (100K+ entities), WebGL-powered
+✓ React: Component architecture, state management, easy integration
+
+**Key Libraries:**
+```
+- react: ^18.x
+- react-map-gl: ^7.x (React wrapper for Mapbox)
+- deck.gl: ^9.x (3D visualization)
+- @deck.gl/react: ^9.x (React integration)
+- @deck.gl/layers: ^9.x (visualization layers)
+- @deck.gl/geo-layers: ^9.x (GIS-specific layers)
+- mapbox-gl: ^3.x (base mapping)
+```
+
+---
+
+## DECK.GL LAYER ARCHITECTURE
+
+### Base Infrastructure Layers (Static)
+**GeoJsonLayer** - Roads, power lines, water systems
+- Source: PostgreSQL/PostGIS → GeoJSON
+- Styling: Color-coded by infrastructure type
+- Interaction: Hover tooltips, click for details
+
+**IconLayer** - Facilities (ports, warehouses, factories)
+- Source: Customer facility data from PostgreSQL
+- Icons: Custom markers for different facility types
+- Sizing: Scale by facility importance/capacity
+
+### Simulation Layers (Dynamic)
+**TripsLayer** - Animate cascading failures over time
+- Example: https://deck.gl/examples/trips-layer
+- Use case: Show disruption spreading through network
+- Data: Time-series paths showing failure propagation
+- Animation: Loop through simulation timeline (Day 0 → Day 14)
+
+**HeatmapLayer** - Economic impact density
+- Show cost concentration by geographic area
+- Color gradient: Green (low impact) → Red (high impact)
+- Updates: Real-time during simulation playback
+
+**ScatterplotLayer** - Disrupted facilities
+- Dynamic color states:
+  - Green: Operational
+  - Yellow: Warning/degraded
+  - Red: Failed/offline
+- Radius: Scales with facility impact magnitude
+
+**ArcLayer** - Supply chain connections
+- Show supply routes between facilities
+- Thickness: Represents flow volume
+- Color: Operational (blue) vs Disrupted (red)
+- Animate: Flow direction and breaks in real-time
+
+---
+
+## MAPBOX INTEGRATION
+
+**Purpose:** Base map tiles and GIS context
+
+**Access Token:**
+```
+pk.eyJ1IjoiYWxub3NhcnVzIiwiYSI6ImNtazYyYjRpZjBtbXEzZ29qa2lkbnZlaHMifQ.HZKSjPzwYhSkRDdidFIhvA
+```
+
+**Setup:**
+```javascript
+const MAPBOX_ACCESS_TOKEN = 'pk.eyJ1IjoiYWxub3NhcnVzIiwiYSI6ImNtazYyYjRpZjBtbXEzZ29qa2lkbnZlaHMifQ.HZKSjPzwYhSkRDdidFIhvA'
+
+<Map
+  mapboxAccessToken={MAPBOX_ACCESS_TOKEN}
+  mapStyle="mapbox://styles/mapbox/dark-v11"
+  initialViewState={{
+    longitude: -118.2437,  // LA default
+    latitude: 34.0522,
+    zoom: 10,
+    pitch: 45,            // 3D perspective
+    bearing: 0
+  }}
+/>
+```
+
+**Map Styles (Recommended):**
+- `dark-v11` - Best for highlighting simulation data
+- `light-v11` - Alternative for presentation mode
+- `streets-v12` - Detailed street view
+- Custom style - Brand colors, minimal distractions
+
+---
+
+## DATA FLOW EXAMPLE
+
+**User Action:** "What if Port of LA closes for 2 weeks?"
+
+1. **Query Simulation Results**
+   - Frontend requests: GET /api/simulation/123
+   - Backend queries PostgreSQL for simulation data
+   - Returns: GeoJSON features + timeline data
+
+2. **Render Base Layers**
+   - Mapbox renders base map (streets, terrain)
+   - deck.gl GeoJsonLayer renders infrastructure (roads, power)
+   - deck.gl IconLayer renders facilities
+
+3. **Animate Disruption**
+   - TripsLayer animates failure cascade (Day 0 → Day 14)
+   - ScatterplotLayer updates facility colors (green → yellow → red)
+   - ArcLayer shows broken supply connections
+   - HeatmapLayer shows economic impact spread
+
+4. **User Interaction**
+   - Hover facility: Tooltip with status, impact cost
+   - Click facility: Panel with detailed timeline
+   - Scrub timeline: Jump to specific day in simulation
+   - Export: Download visualization as video/image
+
+---
+
+## PERFORMANCE CONSIDERATIONS
+
+**Challenge:** Rendering 100K+ entities in real-time
+
+**Optimizations:**
+1. **Layer Visibility:** Only render visible zoom levels
+   - Zoom out: Show aggregated heatmaps
+   - Zoom in: Show individual facilities
+
+2. **Data Aggregation:** Pre-compute heavy calculations server-side
+   - Economic impact totals
+   - Cascade propagation paths
+   - Timeline snapshots
+
+3. **WebGL Acceleration:** deck.gl uses GPU rendering
+   - Can handle millions of data points
+   - 60fps animation target
+
+4. **Progressive Loading:**
+   - Load base infrastructure first
+   - Stream simulation results progressively
+   - Lazy load detailed facility data on-demand
+
+---
+
+## FILE STRUCTURE (Proposed)
+
+```
+Mirror/
+├── backend/
+│   ├── api/
+│   │   ├── infrastructure.py     # Infrastructure data endpoints
+│   │   ├── facilities.py         # Facility data endpoints
+│   │   └── simulations.py        # Simulation results endpoints
+│   ├── database/
+│   │   ├── connection.py         # PostgreSQL connection
+│   │   └── queries.py            # PostGIS queries
+│   └── main.py                   # FastAPI app
+│
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── Map/
+│   │   │   │   ├── MapContainer.tsx       # Main map component
+│   │   │   │   ├── DeckGLOverlay.tsx      # deck.gl layer manager
+│   │   │   │   └── MapControls.tsx        # Zoom, pitch, rotation
+│   │   │   ├── Layers/
+│   │   │   │   ├── InfrastructureLayer.tsx  # Roads, power, water
+│   │   │   │   ├── FacilityLayer.tsx        # Ports, warehouses
+│   │   │   │   ├── DisruptionLayer.tsx      # Animated failures
+│   │   │   │   ├── SupplyChainLayer.tsx     # Arc connections
+│   │   │   │   └── ImpactLayer.tsx          # Heatmap overlay
+│   │   │   ├── Timeline/
+│   │   │   │   ├── TimelinePlayer.tsx     # Playback controls
+│   │   │   │   └── TimelineScrubber.tsx   # Day-by-day navigation
+│   │   │   └── Sidebar/
+│   │   │       ├── SimulationPanel.tsx    # Simulation summary
+│   │   │       └── FacilityDetails.tsx    # Click details
+│   │   ├── hooks/
+│   │   │   ├── useMapData.ts              # Fetch infrastructure
+│   │   │   ├── useSimulation.ts           # Fetch simulation results
+│   │   │   └── useAnimation.ts            # Timeline playback
+│   │   ├── services/
+│   │   │   └── api.ts                     # Backend API calls
+│   │   ├── types/
+│   │   │   ├── infrastructure.ts          # GeoJSON types
+│   │   │   └── simulation.ts              # Simulation data types
+│   │   └── App.tsx                        # Root component
+│   └── package.json
+│
+└── Mapping/
+    ├── Rundown.txt                        # Business brief
+    └── CodeStack.txt                      # This file
+```
+
+---
+
+## IMPLEMENTATION PHASES
+
+### Phase 1: Basic Map Setup (Week 1)
+- [ ] Setup React + TypeScript project
+- [ ] Integrate Mapbox GL JS
+- [ ] Configure access token
+- [ ] Render base map centered on LA
+
+### Phase 2: Static Data Layers (Week 2)
+- [ ] Setup PostgreSQL connection
+- [ ] Create backend API endpoints
+- [ ] Fetch infrastructure data (roads, ports)
+- [ ] Render GeoJsonLayer with infrastructure
+- [ ] Render IconLayer with facilities
+
+### Phase 3: Simulation Playback (Week 3-4)
+- [ ] Implement timeline data structure
+- [ ] Add TripsLayer for cascade animation
+- [ ] Add ScatterplotLayer with color states
+- [ ] Build timeline controls (play/pause/scrub)
+- [ ] Sync layers with timeline position
+
+### Phase 4: Interactive Features (Week 5)
+- [ ] Add hover tooltips
+- [ ] Add click handlers for facility details
+- [ ] Build sidebar panel
+- [ ] Add economic impact heatmap
+- [ ] Add supply chain arc layer
+
+### Phase 5: Polish & Optimization (Week 6)
+- [ ] Performance optimization (lazy loading, aggregation)
+- [ ] Smooth animations (transitions, easing)
+- [ ] Export functionality (screenshots, video)
+- [ ] Mobile responsive design
+
+---
+
+## SAMPLE DATA STRUCTURE
+
+### Infrastructure (GeoJSON)
+```json
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [[-118.2437, 34.0522], [-118.2500, 34.0600]]
+      },
+      "properties": {
+        "type": "road",
+        "name": "I-405",
+        "capacity": 10000
+      }
+    }
+  ]
+}
+```
+
+### Facility Data
+```json
+{
+  "id": "facility_123",
+  "name": "Port of LA",
+  "type": "port",
+  "location": [-118.2437, 34.0522],
+  "capacity": 9000000,
+  "status": "operational"
+}
+```
+
+### Simulation Timeline
+```json
+{
+  "simulation_id": "sim_456",
+  "scenario": "Port of LA closes for 2 weeks",
+  "timeline": [
+    {
+      "day": 0,
+      "facilities": [
+        {"id": "facility_123", "status": "offline", "impact": 0}
+      ]
+    },
+    {
+      "day": 3,
+      "facilities": [
+        {"id": "facility_123", "status": "offline", "impact": 500000000},
+        {"id": "facility_456", "status": "warning", "impact": 50000000}
+      ]
+    }
+  ],
+  "total_impact": 8000000000
+}
+```
+
+---
+
+## QUESTIONS / DECISIONS NEEDED
+
+1. **Backend Framework:** FastAPI (Python) vs Express (Node.js)?
+   - Recommendation: FastAPI (matches overall Mirror stack, better PostGIS integration)
+
+2. **Real-time Updates:** WebSockets vs Polling?
+   - For MVP: Polling (simpler)
+   - For production: WebSockets (smoother real-time playback)
+
+3. **Simulation Storage:** Store full timeline or compute on-demand?
+   - Recommendation: Pre-compute and store (faster playback, better UX)
+
+4. **Data Resolution:** How granular?
+   - Infrastructure: All roads or just major highways?
+   - Facilities: All warehouses or just critical nodes?
+   - Recommendation: Start with major infrastructure, add detail progressively
+
+5. **Animation Speed:** Configurable playback speed?
+   - Recommendation: Yes - 1x, 2x, 4x speed options
+
+---
+
+## CREDENTIALS CONFIGURED ✓
+
+**Mapbox Token:** Configured
+**PostgreSQL Database:** Configured (localhost:5432/mirror)
+
+---
+
+## NEXT STEPS
+
+1. ✓ PostgreSQL connection details provided
+2. ✓ Mapbox access token provided
+3. Setup development environment
+4. Initialize project structure
+5. Begin Phase 1 implementation
+
+---
+
+## REFERENCES
+
+- deck.gl Documentation: https://deck.gl/docs
+- deck.gl Trips Example: https://deck.gl/examples/trips-layer
+- Mapbox GL JS: https://docs.mapbox.com/mapbox-gl-js
+- react-map-gl: https://visgl.github.io/react-map-gl
+- PostGIS: https://postgis.net/documentation
+
+---
