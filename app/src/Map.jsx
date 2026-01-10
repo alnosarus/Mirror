@@ -26,6 +26,7 @@ const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.j
 function MapComponent() {
   const [airportData, setAirportData] = useState(null);
   const [portData, setPortData] = useState(null);
+  const [warehouseData, setWarehouseData] = useState(null);
 
   useEffect(() => {
     // Load airport infrastructure from PostgreSQL API
@@ -45,6 +46,15 @@ function MapComponent() {
         console.log(`Loaded ${data.features.length} port infrastructure features from PostgreSQL`);
       })
       .catch(err => console.error('Error loading port data:', err));
+
+    // Load warehouses from PostgreSQL API
+    fetch('http://localhost:5001/api/warehouses')
+      .then(res => res.json())
+      .then(data => {
+        setWarehouseData(data);
+        console.log(`Loaded ${data.features.length} warehouse buildings from PostgreSQL`);
+      })
+      .catch(err => console.error('Error loading warehouse data:', err));
   }, []);
 
   const layers = [
@@ -98,6 +108,37 @@ function MapComponent() {
         return [100, 100, 100, 200];
       },
       getLineColor: [70, 70, 70],
+      lineWidthMinPixels: 1,
+      material: {
+        ambient: 0.4,
+        diffuse: 0.7,
+        shininess: 32,
+        specularColor: [60, 60, 60]
+      },
+      pickable: true,
+      autoHighlight: true,
+      highlightColor: [255, 200, 0, 200]
+    }),
+
+    // Warehouse buildings layer
+    warehouseData && new GeoJsonLayer({
+      id: 'warehouses',
+      data: warehouseData,
+      filled: true,
+      extruded: true,
+      wireframe: false,
+      getElevation: f => {
+        // Use height from data, or default based on floors
+        if (f.properties.height && f.properties.height > 0) {
+          return f.properties.height;
+        }
+        if (f.properties.num_floors && f.properties.num_floors > 0) {
+          return f.properties.num_floors * 4; // Assume 4m per floor
+        }
+        return 8; // Default warehouse height
+      },
+      getFillColor: [140, 120, 90, 200], // Brown/tan for warehouses
+      getLineColor: [100, 85, 65],
       lineWidthMinPixels: 1,
       material: {
         ambient: 0.4,

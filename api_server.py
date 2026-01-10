@@ -102,6 +102,49 @@ def get_ports():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/warehouses', methods=['GET'])
+def get_warehouses():
+    """Get all warehouses as GeoJSON"""
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        cur.execute("""
+            SELECT id, name, subtype, class, height, num_floors, geometry
+            FROM warehouses
+        """)
+
+        rows = cur.fetchall()
+
+        # Convert to GeoJSON format
+        features = []
+        for row in rows:
+            features.append({
+                "type": "Feature",
+                "properties": {
+                    "id": row['id'],
+                    "name": row['name'],
+                    "subtype": row['subtype'],
+                    "class": row['class'],
+                    "height": row['height'],
+                    "num_floors": row['num_floors']
+                },
+                "geometry": row['geometry']
+            })
+
+        geojson = {
+            "type": "FeatureCollection",
+            "features": features
+        }
+
+        cur.close()
+        conn.close()
+
+        return jsonify(geojson)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
@@ -112,5 +155,6 @@ if __name__ == '__main__':
     print("Endpoints:")
     print("  - GET /api/airports")
     print("  - GET /api/ports")
+    print("  - GET /api/warehouses")
     print("  - GET /api/health")
     app.run(debug=True, port=5001)
