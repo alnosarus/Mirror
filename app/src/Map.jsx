@@ -16,22 +16,34 @@ console.error = (...args) => {
 const INITIAL_VIEW_STATE = {
   longitude: -118.2437,
   latitude: 34.0522,
-  zoom: 15,
-  pitch: 45,
-  bearing: 0
+  zoom: 11,
+  pitch: 50,
+  bearing: -20
 };
 
 const MAP_STYLE = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
 
-// Fetch buildings from OpenStreetMap Overpass API
-async function fetchBuildings(bbox) {
+// Fetch airports and ports from OpenStreetMap
+async function fetchInfrastructure(bbox) {
   const [south, west, north, east] = bbox;
 
   const query = `
-    [out:json][timeout:25];
+    [out:json][timeout:30];
     (
-      way["building"](${south},${west},${north},${east});
-      relation["building"](${south},${west},${north},${east});
+      // Airports
+      way["aeroway"="aerodrome"](${south},${west},${north},${east});
+      relation["aeroway"="aerodrome"](${south},${west},${north},${east});
+
+      // Airport terminals
+      way["aeroway"="terminal"](${south},${west},${north},${east});
+
+      // Ports and harbors
+      way["harbour"="yes"](${south},${west},${north},${east});
+      way["landuse"="port"](${south},${west},${north},${east});
+      relation["landuse"="port"](${south},${west},${north},${east});
+
+      // Marinas
+      way["leisure"="marina"](${south},${west},${north},${east});
     );
     out body;
     >;
@@ -77,18 +89,39 @@ async function fetchBuildings(bbox) {
           .filter(coord => coord !== undefined);
 
         if (polygon.length >= 3) {
-          // Get building height from tags, default to random if not available
-          const levels = element.tags?.['building:levels'] || element.tags?.levels;
-          const height = element.tags?.height
-            ? parseFloat(element.tags.height)
-            : levels
-              ? parseFloat(levels) * 3.5
-              : Math.random() * 50 + 20;
+          // Determine type and height for infrastructure
+          const aeroway = element.tags?.aeroway;
+          const landuse = element.tags?.landuse;
+          const leisure = element.tags?.leisure;
+          const harbour = element.tags?.harbour;
+
+          let height = 15; // Default height for infrastructure
+          let name = element.tags?.name || 'Infrastructure';
+          let type = 'infrastructure';
+
+          if (aeroway === 'aerodrome') {
+            height = 5; // Airports are relatively flat
+            name = element.tags?.name || 'Airport';
+            type = 'airport';
+          } else if (aeroway === 'terminal') {
+            height = 20; // Airport terminals
+            name = element.tags?.name || 'Terminal';
+            type = 'terminal';
+          } else if (landuse === 'port' || harbour === 'yes') {
+            height = 10; // Ports are relatively flat
+            name = element.tags?.name || 'Port';
+            type = 'port';
+          } else if (leisure === 'marina') {
+            height = 8;
+            name = element.tags?.name || 'Marina';
+            type = 'marina';
+          }
 
           buildings.push({
             polygon,
             height,
-            name: element.tags?.name || 'Building'
+            name,
+            type
           });
         }
       }
@@ -96,7 +129,7 @@ async function fetchBuildings(bbox) {
 
     return buildings;
   } catch (error) {
-    console.error('Error fetching buildings from Overpass API:', error);
+    console.error('Error fetching infrastructure from Overpass API:', error);
     return [];
   }
 }
@@ -105,45 +138,50 @@ function MapComponent() {
   const [buildings, setBuildings] = useState([]);
 
   useEffect(() => {
-    // Fetch buildings for downtown LA area
-    const bbox = [34.04, -118.26, 34.06, -118.23]; // [south, west, north, east]
+    // Fetch airports and ports across greater LA area
+    const greaterLA = [33.7, -118.7, 34.35, -118.15];
 
-    fetchBuildings(bbox)
+    fetchInfrastructure(greaterLA)
       .then(data => {
         setBuildings(data);
-        console.log(`Loaded ${data.length} buildings from OpenStreetMap`);
+        console.log(`Loaded ${data.length} airports, ports, and marinas from LA area`);
       })
       .catch(err => {
-        console.error('Error fetching buildings:', err);
+        console.error('Error fetching infrastructure:', err);
       });
   }, []);
 
   const layers = [
     new PolygonLayer({
-      id: 'buildings',
+      id: 'infrastructure',
       data: buildings,
       extruded: true,
       wireframe: false,
       getPolygon: d => d.polygon,
       getElevation: d => d.height,
       getFillColor: d => {
-        // Color buildings by height
-        const heightRatio = Math.min(d.height / 200, 1);
-        return [
-          74 + heightRatio * 100,
-          80 + heightRatio * 120,
-          87 + heightRatio * 140
-        ];
+        // Color by infrastructure type
+        switch (d.type) {
+          case 'airport':
+          case 'terminal':
+            return [100, 150, 255]; // Blue for airports
+          case 'port':
+            return [255, 100, 100]; // Red for ports
+          case 'marina':
+            return [100, 255, 150]; // Green for marinas
+          default:
+            return [150, 150, 150]; // Gray for other
+        }
       },
       material: {
-        ambient: 0.35,
-        diffuse: 0.6,
+        ambient: 0.4,
+        diffuse: 0.7,
         shininess: 32,
-        specularColor: [50, 50, 50]
+        specularColor: [60, 60, 60]
       },
       pickable: true,
       autoHighlight: true,
-      highlightColor: [255, 200, 0, 150]
+      highlightColor: [255, 200, 0, 200]
     })
   ];
 
@@ -153,6 +191,18 @@ function MapComponent() {
       controller={true}
       style={{ width: '100vw', height: '100vh' }}
       layers={layers}
+      getTooltip={({ object }) =>
+        object && {
+          html: `<div style="background: rgba(0,0,0,0.8); padding: 8px 12px; border-radius: 4px;">
+                  <strong>${object.name}</strong><br/>
+                  Type: ${object.type.charAt(0).toUpperCase() + object.type.slice(1)}
+                </div>`,
+          style: {
+            fontSize: '0.8em',
+            color: 'white'
+          }
+        }
+      }
     >
       <Map
         reuseMaps
