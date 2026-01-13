@@ -15,6 +15,15 @@ fi
 
 echo "✓ PostgreSQL is running"
 
+# Check for .env file and load it
+if [ -f .env ]; then
+    echo "✓ Loading environment variables from .env"
+    export $(cat .env | grep -v '^#' | xargs)
+else
+    echo "⚠️  No .env file found - AI agent will not work without ANTHROPIC_API_KEY"
+    echo "   Create .env from .env.example and add your API key"
+fi
+
 # Start API server in background
 echo "📡 Starting API server on http://localhost:5001..."
 python3 api_server.py > logs/api.log 2>&1 &
